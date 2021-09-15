@@ -4,6 +4,7 @@
   "description": "This project is for getting history of whatsapp group and print it",
   "main": "index.js",
   "scripts": {
+    "start": "npm update whatsapp-web.js && node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
