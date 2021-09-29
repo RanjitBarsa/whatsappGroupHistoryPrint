@@ -1,9 +1,10 @@
 const fs = require('fs');
 const { Client, Location } = require('whatsapp-web.js');
 const { MessageMedia } = require('whatsapp-web.js');
-
+var base64ToImage = require('base64-to-image');
 
 const SESSION_FILE_PATH = './session.json';
+const media_path = "./media/";
 let sessionCfg;
 if (fs.existsSync(SESSION_FILE_PATH)) {
     sessionCfg = require(SESSION_FILE_PATH);
@@ -19,7 +20,7 @@ client.on('qr', (qr) => {
 });
 
 client.on('authenticated', (session) => {
-    console.log('AUTHENTICATED', session);
+    // console.log('AUTHENTICATED', session);
     sessionCfg = session;
     fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function (err) {
         if (err) {
@@ -34,58 +35,54 @@ client.on('auth_failure', msg => {
 });
 
 client.on('ready', () => {
-    console.log('BOT READY');
+    console.log('Whatsapp bot is ready 😃');
 });
-
-// function to send messages
-async function send_message(number, message, res) {
-    try {
-        var chatId = number.substring(1) + "@c.us";
-        await client.sendMessage(chatId, message);
-        return res.status(200).json({ "message": "Whatsapp message sent!!" });
-    }
-    catch (e) {
-        return res.status(400).json({ "message": "Failed sending message, Make sure your phone has an active internet connection!!" });
-    }
-}
-
-// function to send pdf
-async function send_pdf(number, pdf, name, res) {
-    try {
-        var chatId = number.substring(1) + "@c.us";
-        const media = new MessageMedia('application/pdf', pdf, name);
-        var chatId = number.substring(1) + "@c.us";
-        await client.sendMessage(chatId, media); //attachments
-        return res.status(200).json({ "message": "Whatsapp pdf sent!!" });
-    }
-    catch (e) {
-        return res.status(400).json({ "message": "Failed sending pdf, Make sure your phone has an active internet connection!!" });
-    }
-}
-
-async function send_csv(number, csv, name, res) {
-    try {
-        var chatId = number.substring(1) + "@c.us";
-        const media = new MessageMedia('text/csv', csv, name);
-        var chatId = number.substring(1) + "@c.us";
-        await client.sendMessage(chatId, media); //attachments
-        return res.status(200).json({ "message": "Whatsapp pdf sent!!" });
-    }
-    catch (e) {
-        return res.status(400).json({ "message": "Failed sending csv, Make sure your phone has an active internet connection!!" });
-    }
-}
 
 client.on('disconnected', (reason) => {
     console.log('Client was logged out', reason);
 });
 
+const trimNumber = (numStr) => {
+    return numStr.substring(0, numStr.indexOf('@'));
+}
+
+const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const fileName = () => {
+    let result = '';
+    for (var i = 0; i < 10; i++) {
+        result += characters.charAt(Math.floor(Math.random() *
+            characters.length - 1));
+    }
+    return result;
+}
+
 client.on("message", async (message) => {
     let chat = await message.getChat();
-    if (chat.isGroup && chat.groupMetadata.creation == 1465194455) {
-        console.log(`from : ${message.from}`);
-        console.log(`timestamp : ${message.timestamp}`);
-        console.log(`body : ${message.body}`);
-        console.log(`has media : ${message.hasMedia}`);
+    // if (chat.isGroup && chat.groupMetadata.creation == 1465194455) { // for office group
+
+    if (chat.isGroup && chat.groupMetadata.creation == 1602851606) { // for test group
+        console.log(message)
+        // console.log(`from : ${trimNumber(message.author)}`);
+        // console.log(`timestamp : ${message.timestamp}`);
+        // console.log(`datetime : ${new Date(message.timestamp * 1000)}`);
+        // console.log(`body : ${message.body}`);
+        // console.log(`has media : ${message.hasMedia}`);
+
+        // image file
+
+        if (message.hasMedia) {
+            const media = await message.downloadMedia();
+            const base64Str = 'data:image/jpg;base64,'.concat(media.data);
+
+            const file = fileName();
+            const options = { 'fileName': file, 'type': 'jpg' };
+            base64ToImage(base64Str, media_path, options);
+        }
+
+        // hasQuotedMsg
+        if (message.hasQuotedMsg) {
+            let quotedMsg = await message.getQuotedMessage();
+            console.log(quotedMsg)
+        }
     }
 });

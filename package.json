@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/RanjitBarsa/whatsappGroupHistoryPrint#readme",
   "dependencies": {
+    "base64-to-image": "^1.0.2",
+    "node-create-csv": "^1.0.0",
     "whatsapp-web.js": "^1.14.1"
   }
 }
