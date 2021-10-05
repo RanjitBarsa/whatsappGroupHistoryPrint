@@ -1,7 +1,10 @@
+'use strict';
 const fs = require('fs');
 const { Client, Location } = require('whatsapp-web.js');
 const { MessageMedia } = require('whatsapp-web.js');
 var base64ToImage = require('base64-to-image');
+const ObjectsToCsv = require('objects-to-csv');
+
 
 const SESSION_FILE_PATH = './session.json';
 const media_path = "./media/";
@@ -36,10 +39,11 @@ client.on('auth_failure', msg => {
 
 client.on('ready', () => {
     console.log('Whatsapp bot is ready 😃');
+
 });
 
 client.on('disconnected', (reason) => {
-    console.log('Client was logged out', reason);
+    console.log('Client was logged out 🙁 ', reason);
 });
 
 const trimNumber = (numStr) => {
@@ -61,28 +65,34 @@ client.on("message", async (message) => {
     // if (chat.isGroup && chat.groupMetadata.creation == 1465194455) { // for office group
 
     if (chat.isGroup && chat.groupMetadata.creation == 1602851606) { // for test group
-        console.log(message)
-        // console.log(`from : ${trimNumber(message.author)}`);
-        // console.log(`timestamp : ${message.timestamp}`);
-        // console.log(`datetime : ${new Date(message.timestamp * 1000)}`);
-        // console.log(`body : ${message.body}`);
-        // console.log(`has media : ${message.hasMedia}`);
 
-        // image file
-
+        let row = {};
+        row.from = trimNumber(message.author);
+        row.timestamp = message.timestamp;
+        const date = new Date(message.timestamp * 1000);
+        row.datetime = date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear() + " " +
+            date.getHours() + ":" + date.getMinutes();
+        row.message = message.body;
+        row.media = message.hasMedia;
+        row.type = "new";
         if (message.hasMedia) {
             const media = await message.downloadMedia();
             const base64Str = 'data:image/jpg;base64,'.concat(media.data);
 
             const file = fileName();
+            row.file = `${file}.jpg`;
             const options = { 'fileName': file, 'type': 'jpg' };
             base64ToImage(base64Str, media_path, options);
         }
 
         // hasQuotedMsg
         if (message.hasQuotedMsg) {
+            row.type = "reply";
             let quotedMsg = await message.getQuotedMessage();
             console.log(quotedMsg)
         }
+
+        new ObjectsToCsv([row]).toDisk('./csv/whatsapp.csv', { append: true });
     }
 });
+
